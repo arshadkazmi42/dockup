@@ -1,11 +1,6 @@
 defmodule DockupUi.Deployment do
   use DockupUi.Web, :model
 
-  alias DockupUi.{
-    WhitelistedUrl,
-    Repo
-  }
-
   @moduledoc """
   Contains the information about a deployment.
 
@@ -48,7 +43,6 @@ defmodule DockupUi.Deployment do
     model
     |> cast(params, required_fields ++ optional_fields)
     |> validate_required(required_fields)
-    |> validate_whitelisted_git_url()
   end
 
   @doc """
@@ -63,22 +57,5 @@ defmodule DockupUi.Deployment do
   """
   def restart_changeset(model) do
     cast(model, %{deleted_at: nil, log_url: nil, urls: nil, status: "restarting"}, [:deleted_at, :log_url, :urls, :status])
-  end
-
-  # Check if git URL is whitelisted
-  defp validate_whitelisted_git_url(changeset) do
-    if git_url = get_field(changeset, :git_url) do
-      if whitelisted?(git_url) do
-        changeset
-      else
-        add_error(changeset, :git_url, "is not whitelisted for deployment")
-      end
-    else
-      changeset
-    end
-  end
-
-  defp whitelisted?(url) do
-    not is_nil(Repo.get_by(WhitelistedUrl, git_url: url))
   end
 end
