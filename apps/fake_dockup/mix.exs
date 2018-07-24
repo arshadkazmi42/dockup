@@ -10,7 +10,7 @@ defmodule FakeDockup.Mixfile do
       deps_path: "../../deps",
       lockfile: "../../mix.lock",
       elixir: "~> 1.5",
-      start_permanent: Mix.env == :prod,
+      start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
   end
@@ -18,14 +18,15 @@ defmodule FakeDockup.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :dogstatsd]
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:dockup_spec, in_umbrella: true}
+      {:dockup_spec, in_umbrella: true},
+      {:dogstatsd, "0.0.3"}
     ]
   end
 end

@@ -3,8 +3,8 @@ defmodule DockupUi.Callback do
   Triggers callbacks on implementors of CallbackProtocol
   and calls DeploymentStatusUpdateService with the given event.
   """
-
   require Logger
+  require DogStatsd
 
   alias DockupUi.{
     DeploymentStatusUpdateService,
@@ -28,11 +28,13 @@ defmodule DockupUi.Callback do
     event = use_restarting_event(deployment_id, event)
 
     {:ok, deployment} = status_update_service.run(event, deployment_id)
+    {:ok, statsd} = DogStatsd.new(Application.get_env(:dockup_ui,:dogstatsdhost), 8125)
 
     case deployment.status do
       "started" ->
         send_slack_message(deployment, slack_webhook)
         send_webhook_request(deployment, webhook)
+        DogStatsd.increment(statsd, "active.deployments")
 
       "waiting_for_urls" ->
         process_deployment_queue(deployment_queue)
@@ -40,12 +42,14 @@ defmodule DockupUi.Callback do
       "deleted" ->
         process_deployment_queue(deployment_queue)
         send_webhook_request(deployment, webhook)
+        DogStatsd.increment(statsd, "delete.deployments")
 
       "restarting" ->
         requeue_deployment(deployment, deployment_queue)
 
       "hibernated" ->
         process_deployment_queue(deployment_queue)
+        DogStatsd.increment(statsd, "hibernate.deployments")
 
       _ ->
         :ok
@@ -98,6 +102,7 @@ defmodule DockupUi.Callback do
       "deleted"
     end
   end
+
   defp use_restarting_event(_, event), do: event
 
   defp requeue_deployment(deployment, deployment_queue) do
