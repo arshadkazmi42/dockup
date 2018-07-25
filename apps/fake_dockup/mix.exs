@@ -18,7 +18,7 @@ defmodule FakeDockup.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :dogstatsd]
+      extra_applications: [:logger]
     ]
   end
 
@@ -26,7 +26,6 @@ defmodule FakeDockup.Mixfile do
   defp deps do
     [
       {:dockup_spec, in_umbrella: true},
-      {:dogstatsd, "0.0.3"}
     ]
   end
 end

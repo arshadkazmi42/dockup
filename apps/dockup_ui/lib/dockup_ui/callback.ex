@@ -28,13 +28,15 @@ defmodule DockupUi.Callback do
     event = use_restarting_event(deployment_id, event)
 
     {:ok, deployment} = status_update_service.run(event, deployment_id)
-    {:ok, statsd} = DogStatsd.new(Application.get_env(:dockup_ui,:dogstatsdhost), 8125)
+    {:ok,statsd} = 
+      :dockup_ui
+      |>Application.get_env(:dogstatsd_host,"localhost")
+      |>DogStatsd.new(8125)
 
     case deployment.status do
       "started" ->
         send_slack_message(deployment, slack_webhook)
         send_webhook_request(deployment, webhook)
-        DogStatsd.increment(statsd, "active.deployments")
 
       "waiting_for_urls" ->
         process_deployment_queue(deployment_queue)
@@ -42,14 +44,14 @@ defmodule DockupUi.Callback do
       "deleted" ->
         process_deployment_queue(deployment_queue)
         send_webhook_request(deployment, webhook)
-        DogStatsd.increment(statsd, "delete.deployments")
+        DogStatsd.increment(statsd, "deployments.deleted")
 
       "restarting" ->
         requeue_deployment(deployment, deployment_queue)
 
       "hibernated" ->
         process_deployment_queue(deployment_queue)
-        DogStatsd.increment(statsd, "hibernate.deployments")
+        DogStatsd.increment(statsd, "deployments.hibernated")
 
       _ ->
         :ok
@@ -69,6 +71,20 @@ defmodule DockupUi.Callback do
     |> Deployment.changeset(%{log_url: log_url})
     |> Repo.update!()
   end
+
+  def send_deployment_time (time) do
+    {:ok,statsd} = 
+    :dockup_ui 
+    |> Application.get_env(:dogstatsd_host,"localhost")
+    |> DogStatsd.new(8125)
+
+    DogStatsd.batch(statsd, fn(s) ->
+      s.increment(statsd, "active.deployments")
+      s.histogram(statsd, "deployments.time", time)
+    end)
+
+  end
+
 
   defp process_deployment_queue(deployment_queue) do
     if deployment_queue.alive?() do

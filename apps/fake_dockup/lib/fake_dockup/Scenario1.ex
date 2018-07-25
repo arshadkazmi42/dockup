@@ -4,20 +4,18 @@ defmodule FakeDockup.Scenario1 do
   If an existing scenario cannot be found by matching the branch name
   from the deployment params, this scenario is chosen as a fallback.
   """
-  require DogStatsd
+  import DateTime
 
   def run(id, callback) do
-    {:ok, statsd} = DogStatsd.new("localhost", 8125)
 
-    DogStatsd.time statsd, "deployment.time" do
-      Process.sleep(2000)
-
-      callback.set_log_url(id, "logio.example.com/#?projectName=project_id")
-      callback.update_status(id, "waiting_for_urls")
-      Process.sleep(2000)
-
-      callback.set_urls(id, ["codemancers.com", "crypt.codemancers.com"])
-      callback.update_status(id, "started")
-    end
+    start_time = utc_now()
+    Process.sleep(2000)
+    callback.set_log_url(id, "logio.example.com/#?projectName=project_id")
+    callback.update_status(id, "waiting_for_urls")
+    Process.sleep(2000)
+    callback.set_urls(id, ["codemancers.com", "crypt.codemancers.com"])
+    callback.update_status(id, "started")
+    callback.send_deployment_time(diff(utc_now(),start_time,:millisecond))
+    
   end
 end
