@@ -29,6 +29,9 @@ defmodule Dockup.DeployJobTest do
     def set_log_url(deployment_id, log_url) do
       send self(), {:set_log_url, deployment_id, log_url}
     end
+    def send_deployment_time(time) do
+      send self(),{:time}
+    end
   end
 
   test "performing a deployment triggers deployment using the project type" do

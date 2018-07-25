@@ -79,7 +79,7 @@ defmodule DockupUi.Callback do
     |> DogStatsd.new(8125)
 
     DogStatsd.batch(statsd, fn(s) ->
-      s.increment(statsd, "active.deployments")
+      s.increment(statsd, "deployments.active")
       s.histogram(statsd, "deployments.time", time)
     end)
 
