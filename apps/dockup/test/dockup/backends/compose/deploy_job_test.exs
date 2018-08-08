@@ -18,8 +18,8 @@ defmodule Dockup.DeployJobTest do
   end
 
   defmodule FakeCallback do
-    def update_status(deployment_id, event) do
-      send self(), {deployment_id, event}
+    def update_status(deployment_id, event,time\\0) do
+      send self(), {deployment_id, event, time}
     end
 
     def set_urls(deployment_id, urls) do
@@ -28,9 +28,6 @@ defmodule Dockup.DeployJobTest do
 
     def set_log_url(deployment_id, log_url) do
       send self(), {:set_log_url, deployment_id, log_url}
-    end
-    def send_deployment_time(time) do
-      send self(),{:time}
     end
   end
 

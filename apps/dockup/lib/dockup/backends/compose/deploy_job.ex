@@ -32,8 +32,8 @@ defmodule Dockup.Backends.Compose.DeployJob do
     urls = project.wait_till_up(urls, project_id)
 
     callback.set_urls(deployment_id, urls)
-    callback.update_status(deployment_id, "started")
-    callback.send_deployment_time(diff(utc_now(),start_time))
+    deployment_time = diff(utc_now(),start_time)
+    callback.update_status(deployment_id, "started", deployment_time)
     
   rescue
     exception ->

@@ -14,8 +14,8 @@ defmodule FakeDockup.Scenario1 do
     callback.update_status(id, "waiting_for_urls")
     Process.sleep(2000)
     callback.set_urls(id, ["codemancers.com", "crypt.codemancers.com"])
-    callback.update_status(id, "started")
-    callback.send_deployment_time(diff(utc_now(),start_time,:millisecond))
+    deployment_time = diff(utc_now(),start_time,:millisecond)
+    callback.update_status(id, "started", deployment_time)
     
   end
 end

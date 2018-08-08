@@ -18,7 +18,7 @@ defmodule DockupUi.Callback do
   @valid_states ~w(queued starting waiting_for_urls started hibernating
     hibernated waking_up deleting deleted failed)
 
-  def update_status(deployment_id, event, deps \\ %{})
+  def update_status(deployment_id, event,time\\0, deps \\ %{})
       when event in @valid_states do
     status_update_service = deps[:status_update_service] || DeploymentStatusUpdateService
     slack_webhook = deps[:slack_webhook] || SlackWebhook
@@ -28,7 +28,7 @@ defmodule DockupUi.Callback do
     event = use_restarting_event(deployment_id, event)
 
     {:ok, deployment} = status_update_service.run(event, deployment_id)
-    {:ok,statsd} = 
+    {:ok, statsd} = 
       :dockup_ui
       |>Application.get_env(:dogstatsd_host,"localhost")
       |>DogStatsd.new(8125)
@@ -37,6 +37,7 @@ defmodule DockupUi.Callback do
       "started" ->
         send_slack_message(deployment, slack_webhook)
         send_webhook_request(deployment, webhook)
+        send_deployment_time(statsd,time)
 
       "waiting_for_urls" ->
         process_deployment_queue(deployment_queue)
@@ -44,14 +45,14 @@ defmodule DockupUi.Callback do
       "deleted" ->
         process_deployment_queue(deployment_queue)
         send_webhook_request(deployment, webhook)
-        DogStatsd.increment(statsd, "deployments.deleted")
+        DogStatsd.increment(statsd,"deployments.deleted")
 
       "restarting" ->
         requeue_deployment(deployment, deployment_queue)
 
       "hibernated" ->
         process_deployment_queue(deployment_queue)
-        DogStatsd.increment(statsd, "deployments.hibernated")
+        DogStatsd.increment(statsd,"deployments.hibernated")
 
       _ ->
         :ok
@@ -72,12 +73,8 @@ defmodule DockupUi.Callback do
     |> Repo.update!()
   end
 
-  def send_deployment_time (time) do
-    {:ok,statsd} = 
-    :dockup_ui 
-    |> Application.get_env(:dogstatsd_host,"localhost")
-    |> DogStatsd.new(8125)
-
+  def send_deployment_time(statsd,time) do
+    
     DogStatsd.batch(statsd, fn(s) ->
       s.increment(statsd, "deployments.active")
       s.histogram(statsd, "deployments.time", time)
